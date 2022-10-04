@@ -1,0 +1,94 @@
+using System;
+using System.Threading.Tasks;
+
+// To interact with Amazon S3.
+using Amazon.S3;
+using Amazon.S3.Model;
+
+namespace S3CreateAndList
+{
+    class Program
+    {
+        // Function Main
+        static async Task Main(string[] args)
+        {
+            // Before running this app, credentials must be specified either in the [default] profile
+            //   or in another profile and then by setting the AWS_PROFILE environment variable.
+            // A region must be specified either in the [default] profile or by setting the AWS_REGION environment variable.
+
+            // Create an S3 client object.
+            var client = new AmazonS3Client();
+
+            // Parse the command line arguments for the bucket name.
+            // If a bucket name was supplied, create the bucket.
+            if(GetBucketName(args, out String bucketName))
+            {
+                try
+                {
+                    Console.WriteLine();
+                    Console.WriteLine($"Creating bucket {bucketName}...");
+                    var response = await client.PutBucketAsync(bucketName);
+                    Console.WriteLine($"Result: {response.HttpStatusCode.ToString()}");
+                }
+                catch(Exception e)
+                {
+                    Console.WriteLine("Caught exception when creating a bucket:");
+                    Console.WriteLine(e.Message);
+                }
+            }
+
+            // List the buckets owned by the user.
+            try
+            {
+                Console.WriteLine();
+                Console.WriteLine("Getting a list of your buckets...");
+                var response = await client.ListBucketsAsync();
+                Console.WriteLine($"Number of buckets: {response.Buckets.Count}");
+                foreach(S3Bucket b in response.Buckets)
+                {
+                    Console.WriteLine(b.BucketName);
+                }
+            }
+            catch(Exception e)
+            {
+                Console.WriteLine("Caught exception when getting the list of buckets:");
+                Console.WriteLine(e.Message);
+            }
+        }
+
+        // Function GetBucketName.
+        // Parses the command line arguments to find the bucket name.
+        private static Boolean GetBucketName(string[] args, out String bucketName)
+        {
+            Boolean retval = false;
+            bucketName = String.Empty;
+            if(args.Length == 0)
+            {
+                Console.WriteLine();
+                Console.WriteLine("No arguments specified. Will simply list your Amazon S3 buckets.");
+                Console.WriteLine("If you wish to create a bucket, supply a valid, globally unique bucket name.");
+                bucketName = String.Empty;
+                retval = false;
+            }
+            else if(args.Length == 1)
+            {
+                bucketName = args[0];
+                retval = true;
+            }
+            else
+            {
+                Console.WriteLine();
+                Console.WriteLine("Too many arguments specified.");
+                Console.WriteLine();
+                Console.WriteLine("dotnet_tutorials - A utility to list your Amazon S3 buckets and optionally create a new one.");
+                Console.WriteLine();
+                Console.WriteLine("Usage: S3CreateAndList [bucket_name]");
+                Console.WriteLine(" - bucket_name, if supplied, must be a valid, globally unique bucket name");
+                Console.WriteLine(" - If bucket_name is not supplied, this utility will simply list your buckets.");
+                Environment.Exit(1);
+            }
+
+            return retval;
+        }
+    }
+}
